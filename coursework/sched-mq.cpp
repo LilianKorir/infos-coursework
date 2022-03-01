@@ -29,6 +29,11 @@ public:
     void init()
     {
         // TODO: Implement me!
+         private:
+	List<SchedulingEntity *> REALTIME;
+    List<SchedulingEntity *> INTERACTIVE;
+    List<SchedulingEntity *> NORMAL;
+    List<SchedulingEntity *> DAEMON;
     }
 
     /**
@@ -38,6 +43,20 @@ public:
     void add_to_runqueue(SchedulingEntity& entity) override
     {
         // TODO: Implement me!
+        //add to the right queue
+        UniqueIRQLock l;
+        if (priority == SchedulingEntityPriority::REALTIME) {
+            REALTIME.enqueue(&entity);
+        }
+         if (priority == SchedulingEntityPriority::INTERACTIVE) {
+            INTERACTIVE.enqueue(&entity);
+        }
+         if (priority == SchedulingEntityPriority::NORMAL) {
+            NORMAL.enqueue(&entity);
+        }
+         if (priority == SchedulingEntityPriority::DAEMON) {
+            DAEMON.enqueue(&entity);
+        }
     }
 
     /**
@@ -47,6 +66,21 @@ public:
     void remove_from_runqueue(SchedulingEntity& entity) override
     {
         // TODO: Implement me!
+        UniqueIRQLock l;
+		
+        if (priority == SchedulingEntityPriority::REALTIME) {
+            REALTIME.remove(&entity);
+        }
+         if (priority == SchedulingEntityPriority::INTERACTIVE) {
+            INTERACTIVE.remove(&entity);
+        }
+         if (priority == SchedulingEntityPriority::NORMAL) {
+            NORMAL.remove(&entity);
+        }
+         if (priority == SchedulingEntityPriority::DAEMON) {
+            DAEMON.remove(&entity);
+        }
+
     }
 
     /**
@@ -57,7 +91,23 @@ public:
     SchedulingEntity *pick_next_entity() override
     {
         // TODO: Implement me!
+        if (runqueue.count() == 0) return NULL;
+		if (runqueue.count() == 1) return runqueue.first();
+		
+		SchedulingEntity::EntityRuntime min_runtime = 0;
+		SchedulingEntity *min_runtime_entity = NULL;
+        //LOOK THROUGH ALL AND GO TO NEXT, REASSSEMBLE RUNQUE in its priority
+        // when does priority take place? 
+		for (const auto& entity : runqueue) {
+			if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
+				min_runtime_entity = entity;
+				min_runtime = entity->cpu_runtime();
+			}
+		}
+				
+		return min_runtime_entity;
     }
+   
 };
 
 /* --- DO NOT CHANGE ANYTHING BELOW THIS LINE --- */
