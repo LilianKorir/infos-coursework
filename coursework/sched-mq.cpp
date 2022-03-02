@@ -91,20 +91,52 @@ public:
     SchedulingEntity *pick_next_entity() override
     {
         // TODO: Implement me!
-        if (runqueue.count() == 0) return NULL;
-		if (runqueue.count() == 1) return runqueue.first();
+        if (REALTIME.count() == 0 || INTERACTIVE.count() == 0 || NORMAL.count() == 0 || DAEMON.count() == 0) return NULL;
+		if (REALTIME.count() == 1) return REALTIME.first();
+        if (REALTIME.count() == 0 && INTERACTIVE.count() == 1) return INTERACTIVE.first();
+        if (REALTIME.count() == 0 && INTERACTIVE.count() == 0 && NORMAL.COUNT() == 1) return NORMAL.first();  
+        if (REALTIME.count() == 0 && INTERACTIVE.count() == 0 && NORMAL.COUNT() == 0 && DAEMON.count() == 1) return DAEMON.first();
 		
 		SchedulingEntity::EntityRuntime min_runtime = 0;
 		SchedulingEntity *min_runtime_entity = NULL;
-        //LOOK THROUGH ALL AND GO TO NEXT, REASSSEMBLE RUNQUE in its priority
-        // when does priority take place? 
-		for (const auto& entity : runqueue) {
-			if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
-				min_runtime_entity = entity;
-				min_runtime = entity->cpu_runtime();
-			}
-		}
-				
+        if(REALTIME.count() > 1){
+            for (const auto& entity : REALTIME) {
+                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
+                    min_runtime_entity = entity;
+                    min_runtime = entity->cpu_runtime();
+                }
+            }
+        }	
+        else{
+            if(INTERACTIVE.count() > 1){
+            for (const auto& entity : INTERACTIVE) {
+                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
+                    min_runtime_entity = entity;
+                    min_runtime = entity->cpu_runtime();
+                }
+            }
+        }
+        else{
+            if(NORMAL.count() > 1){
+            for (const auto& entity : NORMAL) {
+                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
+                    min_runtime_entity = entity;
+                    min_runtime = entity->cpu_runtime();
+                }
+            }
+        }
+        else{
+            for (const auto& entity : DAEMON) {
+                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
+                    min_runtime_entity = entity;
+                    min_runtime = entity->cpu_runtime();
+                }
+            }
+        }
+
+        }
+        }
+        }
 		return min_runtime_entity;
     }
    
