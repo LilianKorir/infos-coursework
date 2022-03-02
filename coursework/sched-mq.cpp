@@ -13,7 +13,7 @@ using namespace infos::kernel;
 using namespace infos::util;
 
 /**
- * A Multiple Queue priority scheduling algorithm
+ * A Multiple Queue entity.priority() scheduling algorithm
  */
 class MultipleQueuePriorityScheduler : public SchedulingAlgorithm
 {
@@ -29,11 +29,7 @@ public:
     void init()
     {
         // TODO: Implement me!
-         private:
-	List<SchedulingEntity *> REALTIME;
-    List<SchedulingEntity *> INTERACTIVE;
-    List<SchedulingEntity *> NORMAL;
-    List<SchedulingEntity *> DAEMON;
+         
     }
 
     /**
@@ -45,17 +41,17 @@ public:
         // TODO: Implement me!
         //add to the right queue
         UniqueIRQLock l;
-        if (priority == SchedulingEntityPriority::REALTIME) {
-            REALTIME.enqueue(&entity);
+        if (entity.priority() == SchedulingEntityPriority::REALTIME) {
+            Rrunq.enqueue(&entity);
         }
-         if (priority == SchedulingEntityPriority::INTERACTIVE) {
-            INTERACTIVE.enqueue(&entity);
+         if (entity.priority() == SchedulingEntityPriority::INTERACTIVE) {
+            Irunq.enqueue(&entity);
         }
-         if (priority == SchedulingEntityPriority::NORMAL) {
-            NORMAL.enqueue(&entity);
+         if (entity.priority() == SchedulingEntityPriority::NORMAL) {
+            Nrunq.enqueue(&entity);
         }
-         if (priority == SchedulingEntityPriority::DAEMON) {
-            DAEMON.enqueue(&entity);
+         if (entity.priority() == SchedulingEntityPriority::DAEMON) {
+            Drunq.enqueue(&entity);
         }
     }
 
@@ -68,17 +64,17 @@ public:
         // TODO: Implement me!
         UniqueIRQLock l;
 		
-        if (priority == SchedulingEntityPriority::REALTIME) {
-            REALTIME.remove(&entity);
+        if (entity.priority() == SchedulingEntityPriority::REALTIME) {
+            Rrunq.remove(&entity);
         }
-         if (priority == SchedulingEntityPriority::INTERACTIVE) {
-            INTERACTIVE.remove(&entity);
+         if (entity.priority() == SchedulingEntityPriority::INTERACTIVE) {
+            Irunq.remove(&entity);
         }
-         if (priority == SchedulingEntityPriority::NORMAL) {
-            NORMAL.remove(&entity);
+         if (entity.priority() == SchedulingEntityPriority::NORMAL) {
+            Nrunq.remove(&entity);
         }
-         if (priority == SchedulingEntityPriority::DAEMON) {
-            DAEMON.remove(&entity);
+         if (entity.priority() == SchedulingEntityPriority::DAEMON) {
+            Drunq.remove(&entity);
         }
 
     }
@@ -91,16 +87,16 @@ public:
     SchedulingEntity *pick_next_entity() override
     {
         // TODO: Implement me!
-        if (REALTIME.count() == 0 || INTERACTIVE.count() == 0 || NORMAL.count() == 0 || DAEMON.count() == 0) return NULL;
-		if (REALTIME.count() == 1) return REALTIME.first();
-        if (REALTIME.count() == 0 && INTERACTIVE.count() == 1) return INTERACTIVE.first();
-        if (REALTIME.count() == 0 && INTERACTIVE.count() == 0 && NORMAL.COUNT() == 1) return NORMAL.first();  
-        if (REALTIME.count() == 0 && INTERACTIVE.count() == 0 && NORMAL.COUNT() == 0 && DAEMON.count() == 1) return DAEMON.first();
+        if (Rrunq.count() == 0 || Irunq.count() == 0 || Nrunq.count() == 0 || Drunq.count() == 0) return NULL;
+		if (Rrunq.count() == 1) return Rrunq.first();
+        if (Rrunq.count() == 0 && Irunq.count() == 1) return Irunq.first();
+        if (Rrunq.count() == 0 && Irunq.count() == 0 && Nrunq.count() == 1) return Nrunq.first();  
+        if (Rrunq.count() == 0 && Irunq.count() == 0 && Nrunq.count() == 0 && Drunq.count() == 1) return Drunq.first();
 		
 		SchedulingEntity::EntityRuntime min_runtime = 0;
 		SchedulingEntity *min_runtime_entity = NULL;
-        if(REALTIME.count() > 1){
-            for (const auto& entity : REALTIME) {
+        if(Rrunq.count() > 1){
+            for (const auto& entity : Rrunq) {
                 if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
                     min_runtime_entity = entity;
                     min_runtime = entity->cpu_runtime();
@@ -108,8 +104,8 @@ public:
             }
         }	
         else{
-            if(INTERACTIVE.count() > 1){
-            for (const auto& entity : INTERACTIVE) {
+            if(Irunq.count() > 1){
+            for (const auto& entity : Irunq) {
                 if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
                     min_runtime_entity = entity;
                     min_runtime = entity->cpu_runtime();
@@ -117,8 +113,8 @@ public:
             }
         }
         else{
-            if(NORMAL.count() > 1){
-            for (const auto& entity : NORMAL) {
+            if(Nrunq.count() > 1){
+            for (const auto& entity : Nrunq) {
                 if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
                     min_runtime_entity = entity;
                     min_runtime = entity->cpu_runtime();
@@ -126,7 +122,7 @@ public:
             }
         }
         else{
-            for (const auto& entity : DAEMON) {
+            for (const auto& entity : Drunq) {
                 if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
                     min_runtime_entity = entity;
                     min_runtime = entity->cpu_runtime();
@@ -135,12 +131,16 @@ public:
         }
 
         }
-        }
+        
         }
 		return min_runtime_entity;
     }
-   
-};
+    private:
+        List<SchedulingEntity *> Rrunq;
+        List<SchedulingEntity *> Irunq;
+        List<SchedulingEntity *> Nrunq;
+        List<SchedulingEntity *> Drunq;
+    };
 
 /* --- DO NOT CHANGE ANYTHING BELOW THIS LINE --- */
 
