@@ -38,8 +38,7 @@ public:
      */
     void add_to_runqueue(SchedulingEntity& entity) override
     {
-        // TODO: Implement me!
-        //add to the right queue
+        //check the priority of an entity and add it to the right queue
         UniqueIRQLock l;
         if (entity.priority() == SchedulingEntityPriority::REALTIME) {
             Rrunq.enqueue(&entity);
@@ -61,7 +60,7 @@ public:
      */
     void remove_from_runqueue(SchedulingEntity& entity) override
     {
-        // TODO: Implement me!
+        //check the priority of an entity and remove it from the right queue
         UniqueIRQLock l;
 		
         if (entity.priority() == SchedulingEntityPriority::REALTIME) {
@@ -87,59 +86,102 @@ public:
     SchedulingEntity *pick_next_entity() override
     {
         // TODO: Implement me!
-        if (Rrunq.count() == 0 || Irunq.count() == 0 || Nrunq.count() == 0 || Drunq.count() == 0) return NULL;
-		if (Rrunq.count() == 1) return Rrunq.first();
-        if (Rrunq.count() == 0 && Irunq.count() == 1) return Irunq.first();
-        if (Rrunq.count() == 0 && Irunq.count() == 0 && Nrunq.count() == 1) return Nrunq.first();  
-        if (Rrunq.count() == 0 && Irunq.count() == 0 && Nrunq.count() == 0 && Drunq.count() == 1) return Drunq.first();
-		
-		SchedulingEntity::EntityRuntime min_runtime = 0;
-		SchedulingEntity *min_runtime_entity = NULL;
-        if(Rrunq.count() > 1){
-            for (const auto& entity : Rrunq) {
-                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
-                    min_runtime_entity = entity;
-                    min_runtime = entity->cpu_runtime();
+        if (Rrunq.count() == 0 || Irunq.count() == 0 || Nrunq.count() == 0 || Drunq.count() == 0) return NULL; // if all the queues are empty
+		SchedulingEntity::EntityRuntime quantum = 10;
+		SchedulingEntity *next_entity = NULL;
+        //if there are processes in the realtime queue
+        if(Rrunq.count() > 0){
+            while(1){ 
+                for (const auto& entity : Rrunq) {
+                    next_entity = Rrunq.first(); 
+                    remove_from_runqueue(&entity);
+                    int run_time = entity->cpu_runtime();
+                    int rem_time = entity->cpu_runtime() - quantum; //remaining cpu_run_time for a process
+                    if(run_time > quantum){
+                        entity->cpu_runtime() = quantum; // the entity only runs for a max of quantum time at a given time slot
+                    }
+                    if(rem_time > 0) {
+                        add_to_runqueue(&entity); //if the process is not complete add it to the end of the respective priority queue
+                    }
                 }
-            }
-        }	
-        else{
-            if(Irunq.count() > 1){
-            for (const auto& entity : Irunq) {
-                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
-                    min_runtime_entity = entity;
-                    min_runtime = entity->cpu_runtime();
-                }
-            }
-        }
-        else{
-            if(Nrunq.count() > 1){
-            for (const auto& entity : Nrunq) {
-                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
-                    min_runtime_entity = entity;
-                    min_runtime = entity->cpu_runtime();
-                }
-            }
-        }
-        else{
-            for (const auto& entity : Drunq) {
-                if (min_runtime_entity == NULL || entity->cpu_runtime() < min_runtime) {
-                    min_runtime_entity = entity;
-                    min_runtime = entity->cpu_runtime();
+                if(Rrunq.empty(){
+                    break;  // if all processes in this priority are complete
                 }
             }
         }
 
+        else{
+            //if there are no processes in the realtime queue and there are processes in the interactive queue
+            if(Irunq.count() > 0){
+                while(1){ 
+                    for (const auto& entity : Irunq) {
+                        next_entity = entity; 
+                        remove_from_runqueue(&entity);
+                        int run_time = entity->cpu_runtime();
+                        int rem_time = entity->cpu_runtime() - quantum;
+                        if(run_time > quantum){
+                            entity->cpu_runtime() = quantum;
+                        }
+                        if(rem_time > 0) {
+                            add_to_runqueue(&entity);
+                        }
+                    }
+                    if(Irunq.empty(){
+                        break;
+                    }
+                }
+            }
+            else{
+                //if there are no processes in the realtime and interactive queues and there are processes in the normal queue
+                if(Nrunq.count() > 0){
+                    while(1){
+                        for (const auto& entity : Nrunq) {
+                            next_entity = Nrunq.first(); 
+                            remove_from_runqueue(&entity);
+                            int run_time = entity->cpu_runtime();
+                            int rem_time = entity->cpu_runtime() - quantum;
+                            if(run_time > quantum){
+                                entity->cpu_runtime() = quantum;
+                            }
+                            if(rem_time > 0) {
+                                add_to_runqueue(&entity);
+                            }
+                        }
+                        if(Nrunq.empty(){
+                            break;
+                        }
+                    }
+                }
+                else{
+                    //if there are no processes in the realtime,interactive and norma queues and there are processes in the daemon queue
+                    while(1){
+                        for (const auto& entity : Drunq) {
+                            next_entity = Drunq.first(); 
+                            remove_from_runqueue(&entity);
+                            int run_time = entity->cpu_runtime();
+                            int rem_time = entity->cpu_runtime() - quantum;
+                            if(run_time > quantum){
+                                entity->cpu_runtime() = quantum;
+                            }
+                            if(rem_time > 0) {
+                                add_to_runqueue(&entity);
+                            }
+                        }
+                        if(Drunq.empty(){
+                            break;
+                        }
+                    }
+                }
+            }
         }
-        
-        }
-		return min_runtime_entity;
+
+		return next_entity;
     }
     private:
-        List<SchedulingEntity *> Rrunq;
-        List<SchedulingEntity *> Irunq;
-        List<SchedulingEntity *> Nrunq;
-        List<SchedulingEntity *> Drunq;
+        List<SchedulingEntity *> Rrunq; //Realtime queue
+        List<SchedulingEntity *> Irunq; //Interactive queue
+        List<SchedulingEntity *> Nrunq; //Normal queue
+        List<SchedulingEntity *> Drunq; //Daemon queue
     };
 
 /* --- DO NOT CHANGE ANYTHING BELOW THIS LINE --- */
