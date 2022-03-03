@@ -39,6 +39,7 @@ public:
     void add_to_runqueue(SchedulingEntity& entity) override
     {
         //check the priority of an entity and add it to the right queue
+    
         UniqueIRQLock l;
         if (entity.priority() == SchedulingEntityPriority::REALTIME) {
             Rrunq.enqueue(&entity);
@@ -94,17 +95,17 @@ public:
             while(1){ 
                 for (const auto& entity : Rrunq) {
                     next_entity = Rrunq.first(); 
-                    remove_from_runqueue(&entity);
-                    int run_time = entity->cpu_runtime();
-                    int rem_time = entity->cpu_runtime() - quantum; //remaining cpu_run_time for a process
+                   Rrunq.remove(entity);
+                    run_time = entity->cpu_runtime();
+                    rem_time = entity->cpu_runtime() - quantum; //remaining cpu_run_time for a process
                     if(run_time > quantum){
                         entity->cpu_runtime() = quantum; // the entity only runs for a max of quantum time at a given time slot
                     }
                     if(rem_time > 0) {
-                        add_to_runqueue(&entity); //if the process is not complete add it to the end of the respective priority queue
+                        Rrunq.enqueue(entity); //if the process is not complete add it to the end of the respective priority queue
                     }
                 }
-                if(Rrunq.empty(){
+                if(Rrunq.empty()){
                     break;  // if all processes in this priority are complete
                 }
             }
@@ -116,17 +117,17 @@ public:
                 while(1){ 
                     for (const auto& entity : Irunq) {
                         next_entity = entity; 
-                        remove_from_runqueue(&entity);
-                        int run_time = entity->cpu_runtime();
-                        int rem_time = entity->cpu_runtime() - quantum;
+                        Irunq.remove(entity);
+                        run_time = entity->cpu_runtime();
+                        rem_time = entity->cpu_runtime() - quantum;
                         if(run_time > quantum){
                             entity->cpu_runtime() = quantum;
                         }
                         if(rem_time > 0) {
-                            add_to_runqueue(&entity);
+                           Irunq.enqueue(entity);
                         }
                     }
-                    if(Irunq.empty(){
+                    if(Irunq.empty()){
                         break;
                     }
                 }
@@ -137,17 +138,17 @@ public:
                     while(1){
                         for (const auto& entity : Nrunq) {
                             next_entity = Nrunq.first(); 
-                            remove_from_runqueue(&entity);
-                            int run_time = entity->cpu_runtime();
-                            int rem_time = entity->cpu_runtime() - quantum;
+                            Nrunq.remove(entity);
+                            run_time = entity->cpu_runtime();
+                            rem_time = entity->cpu_runtime() - quantum;
                             if(run_time > quantum){
                                 entity->cpu_runtime() = quantum;
                             }
                             if(rem_time > 0) {
-                                add_to_runqueue(&entity);
+                                Nrunq.enqueue(entity);
                             }
                         }
-                        if(Nrunq.empty(){
+                        if(Nrunq.empty()){
                             break;
                         }
                     }
@@ -157,17 +158,17 @@ public:
                     while(1){
                         for (const auto& entity : Drunq) {
                             next_entity = Drunq.first(); 
-                            remove_from_runqueue(&entity);
-                            int run_time = entity->cpu_runtime();
-                            int rem_time = entity->cpu_runtime() - quantum;
+                            Drunq.remove(entity);
+                            run_time = entity->cpu_runtime();
+                            rem_time = entity->cpu_runtime() - quantum;
                             if(run_time > quantum){
                                 entity->cpu_runtime() = quantum;
                             }
                             if(rem_time > 0) {
-                                add_to_runqueue(&entity);
+                                Drunq.enqueue(entity);
                             }
                         }
-                        if(Drunq.empty(){
+                        if(Drunq.empty()){
                             break;
                         }
                     }
@@ -177,12 +178,16 @@ public:
 
 		return next_entity;
     }
-    private:
-        List<SchedulingEntity *> Rrunq; //Realtime queue
-        List<SchedulingEntity *> Irunq; //Interactive queue
-        List<SchedulingEntity *> Nrunq; //Normal queue
-        List<SchedulingEntity *> Drunq; //Daemon queue
-    };
+
+private:
+    List<SchedulingEntity *> Rrunq; //Realtime queue
+    List<SchedulingEntity *> Irunq; //Interactive queue
+    List<SchedulingEntity *> Nrunq; //Normal queue
+    List<SchedulingEntity *> Drunq; //Daemon queue
+    SchedulingEntity::EntityRuntime run_time;
+    SchedulingEntity::EntityRuntime rem_time;
+
+};
 
 /* --- DO NOT CHANGE ANYTHING BELOW THIS LINE --- */
 
