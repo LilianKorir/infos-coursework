@@ -17,6 +17,14 @@ using namespace infos::util;
  */
 class MultipleQueuePriorityScheduler : public SchedulingAlgorithm
 {
+private:
+    List<SchedulingEntity *> Rrunq; //Realtime queue
+    List<SchedulingEntity *> Irunq; //Interactive queue
+    List<SchedulingEntity *> Nrunq; //Normal queue
+    List<SchedulingEntity *> Drunq; //Daemon queue
+    SchedulingEntity::EntityRuntime run_time;
+    SchedulingEntity::EntityRuntime rem_time;
+
 public:
     /**
      * Returns the friendly name of the algorithm, for debugging and selection purposes.
@@ -40,17 +48,21 @@ public:
     {
         //check the priority of an entity and add it to the right queue
     
-        UniqueIRQLock l;
+        
         if (entity.priority() == SchedulingEntityPriority::REALTIME) {
+            UniqueIRQLock l;
             Rrunq.enqueue(&entity);
         }
          if (entity.priority() == SchedulingEntityPriority::INTERACTIVE) {
+            UniqueIRQLock l;
             Irunq.enqueue(&entity);
         }
          if (entity.priority() == SchedulingEntityPriority::NORMAL) {
+            UniqueIRQLock l;
             Nrunq.enqueue(&entity);
         }
          if (entity.priority() == SchedulingEntityPriority::DAEMON) {
+            UniqueIRQLock l;
             Drunq.enqueue(&entity);
         }
     }
@@ -62,19 +74,24 @@ public:
     void remove_from_runqueue(SchedulingEntity& entity) override
     {
         //check the priority of an entity and remove it from the right queue
-        UniqueIRQLock l;
+       
 		
         if (entity.priority() == SchedulingEntityPriority::REALTIME) {
+            UniqueIRQLock l;
             Rrunq.remove(&entity);
         }
-         if (entity.priority() == SchedulingEntityPriority::INTERACTIVE) {
+         if (entity.priority() == SchedulingEntityPriority::INTERACTIVE){
+            UniqueIRQLock l;
             Irunq.remove(&entity);
         }
          if (entity.priority() == SchedulingEntityPriority::NORMAL) {
+            UniqueIRQLock l;
             Nrunq.remove(&entity);
         }
          if (entity.priority() == SchedulingEntityPriority::DAEMON) {
+            UniqueIRQLock l;
             Drunq.remove(&entity);
+
         }
 
     }
@@ -88,8 +105,9 @@ public:
     {
         // TODO: Implement me!
         if (Rrunq.count() == 0 || Irunq.count() == 0 || Nrunq.count() == 0 || Drunq.count() == 0) return NULL; // if all the queues are empty
-		SchedulingEntity::EntityRuntime quantum = 10;
+		
 		SchedulingEntity *next_entity = NULL;
+        SchedulingEntity::EntityRuntime quantum = 5;//can be chaged to any number
         //if there are processes in the realtime queue
         if(Rrunq.count() > 0){
             while(1){ 
@@ -178,15 +196,6 @@ public:
 
 		return next_entity;
     }
-
-private:
-    List<SchedulingEntity *> Rrunq; //Realtime queue
-    List<SchedulingEntity *> Irunq; //Interactive queue
-    List<SchedulingEntity *> Nrunq; //Normal queue
-    List<SchedulingEntity *> Drunq; //Daemon queue
-    SchedulingEntity::EntityRuntime run_time;
-    SchedulingEntity::EntityRuntime rem_time;
-
 };
 
 /* --- DO NOT CHANGE ANYTHING BELOW THIS LINE --- */
