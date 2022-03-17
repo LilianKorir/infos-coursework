@@ -150,7 +150,15 @@ public:
         PageDescriptor = _free_area[order].head
         while (head =! NULL){
             if(pgd = head){
-                pgd.type == PageDescriptorType::ALLOCATED;
+                pgd.type == PageDescriptorType::AVAILABLE;
+                //need to merge blocks
+                int in_order = order;
+                PageDescriptor *buddy = *buddy_of(*pgd,order)
+                while (buddy.type == PageDescriptorType::AVAILABLE){
+                    **merge_block( **pgd, int source_order)
+                    *pgd = min(*pgd,*buddy);
+                    in_order +=1;
+                }
                 break;
             }
              head = head.next_free;
@@ -165,6 +173,15 @@ public:
     virtual void insert_page_range(PageDescriptor *start, uint64_t count) override
     {
         // TODO: Implement me!
+        int req_order = ceil(log(count) / log(2));
+        int cur_order = MAX_ORDER
+        while (cur_order > req_order){
+            split_block(**start, cur_order)
+            cur_order --;
+        }
+        if (cur_order==req_order){ //mark available
+            start.type == PageDescriptorType::AVAILABLE;
+        }
     }
 
     /**
@@ -175,6 +192,15 @@ public:
     virtual void remove_page_range(PageDescriptor *start, uint64_t count) override
     {
         // TODO: Implement me!
+        int req_order = ceil(log(count) / log(2));
+        int cur_order = MAX_ORDER
+        while (cur_order > req_order){
+            split_block(**start, cur_order)
+            cur_order --;
+        }
+        if (cur_order==req_order){ //reserve
+            start.type == PageDescriptorType::RESERVED;
+        }
     }
 
 	/**
