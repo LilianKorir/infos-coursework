@@ -31,6 +31,12 @@ private:
 	PageDescriptor *buddy_of(PageDescriptor *pgd, int order)
 	{
         // TODO: Implement me!
+        int n = pow(2,order+1);
+        if(pgd % n == 0){
+            return *(pgd + pow(2,order));
+        }else{
+            return *(pgd - pow(2,order));
+        }
 	}
 
 	/**
@@ -44,6 +50,13 @@ private:
 	PageDescriptor *split_block(PageDescriptor **block_pointer, int source_order)
 	{
         // TODO: Implement me!
+        //add below
+        int add = 0.5* pow(2,order)
+        PageDescriptor *secondf = *block_pointer + add;
+        _free_areas[source_order-1]add_pg(*block_pointer);
+        _free_areas[source_order-1]add_pg(*secondf);
+       //remove above
+        _free_areas[source_order]delete_pg(*block_pointer);   
 	}
 
 	/**
@@ -55,6 +68,13 @@ private:
 	PageDescriptor **merge_block(PageDescriptor **block_pointer, int source_order)
 	{
         // TODO: Implement me!
+         //add above
+        int add = 0.5* pow(2,order)
+        PageDescriptor buddy = buddy_of(*block_pointer, source_order);
+        _free_areas[source_order+1].add_pg(min(*block_pointer,*buddy));
+       //remove below
+        _free_areas[source_order].delete_pg(*block_pointer);  
+        _free_areas[source_order].delete_pg(*buddy);   
 	}
 
 public:
@@ -67,6 +87,55 @@ public:
 	PageDescriptor *allocate_pages(int order) override
 	{
         // TODO: Implement me!
+        //check if block is available 
+        //starting from that order going up
+
+        //available in that order
+        bool found = false
+        if(_free_areas[order].size() > 0){
+            l_list block = _free_areas[order];
+            PageDescriptor *pg = block.head;
+            while(pg!= NULL){
+                 if(pg.type == PageDescriptorType::AVAILABLE){
+                    pg.type == PageDescriptorType::ALLOCATED;
+                    found = true;
+                    break;
+                 }
+                 else{
+                    pg = pg->next_free
+                 }
+            }
+        }
+        if (found == false){
+            for(int i = order+1;i < ARRAY_SIZE(_free_areas); i++){
+                if(_free_areas[i].size() > 0){
+                    l_list block = _free_areas[i];
+                    PageDescriptor *pg = block.head;
+                    int b_order = i;
+                    while(pg!= NULL){
+                    if(pg.type == PageDescriptorType::AVAILABLE){
+
+                        while(_free_areas[order].size() == 0){
+                        split_block(**pg,b_order); //split
+                        b_order -=1;
+                        }
+                        //if no loger equal to 0 exists, should now allocate
+                        pg.type == PageDescriptorType::ALLOCATED;
+                        found = true;
+                        break;
+                    }else{
+                    pg = pg->next_free
+                    }
+                    }  
+                }
+                if(found==true){
+                    break;
+                }
+            }
+        }else{
+            catch{
+                cout << "Memory is Full!";}     
+        }
 	}
 
     /**
@@ -77,6 +146,15 @@ public:
     void free_pages(PageDescriptor *pgd, int order) override
     {
         // TODO: Implement me!
+        //traverse the linked list and look for pgd and then change to available 
+        PageDescriptor = _free_area[order].head
+        while (head =! NULL){
+            if(pgd = head){
+                pgd.type == PageDescriptorType::ALLOCATED;
+                break;
+            }
+             head = head.next_free;
+        }
     }
 
     /**
@@ -106,6 +184,46 @@ public:
 	bool init(PageDescriptor *page_descriptors, uint64_t nr_page_descriptors) override
 	{
         // TODO: Implement me!
+        // create the linked list
+        for(int i = 0; i < ARRAY_SIZE(_free_areas); i++){
+            l_list block;
+            _free_area[i] = block;
+        }
+        //implement my linked-list
+        class l_list {
+        public:
+            l_list(){
+                head = NULL;
+                tail = NULL; 
+            }
+
+            void add_pg(PageDescriptor *pg){
+                pg->next_free = NULL;
+                if(head == NULL)
+                {
+                    head = *pg;
+                    tail = *pg;
+                }
+                else
+                {
+                    tail->next_free = pg;
+                    tail = tail->next_free;
+                }
+            }
+            void delete_pg(PageDescriptor *pg){   
+                if (head == pg) //if pg is the head node
+                {
+                    head = head.next_free;
+                    head.next_free = head.next_free.next_free;
+                    delete head;
+                }else{
+                    PageDescriptor temp;
+                    temp = pg->next_free;
+                    pg->next_free = temp->next_free;
+                    delete temp;
+                }
+            }
+        };
 	}
 
 	/**
@@ -148,4 +266,4 @@ private:
 /*
  * Allocation algorithm registration framework
  */
-RegisterPageAllocator(BuddyPageAllocator);
+RegisterPageAllocator(BuddyPageAllocator);???
