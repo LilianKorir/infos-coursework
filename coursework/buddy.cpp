@@ -10,12 +10,41 @@
 #include <infos/util/math.h>
 #include <infos/util/printf.h>
 
+
+
 using namespace infos::kernel;
 using namespace infos::mm;
 using namespace infos::util;
 
 #define MAX_ORDER	18
-
+// struct Llist {
+// 	head;
+// 	tail;
+// 	void add_pg(PageDescriptor *pg){
+// 		pg->next_free = NULL;
+// 		if(head == NULL)
+// 		{
+// 			head = *pg;
+// 			tail = *pg;
+// 		}
+// 		else
+// 		{
+// 			tail->next_free = pg;
+// 			tail = tail->next_free;
+// 		}
+// 	}
+// 	void delete_pg(PageDescriptor *pg){   
+// 		if (head == pg) //if pg is the head node
+// 		{
+// 			head = head->next_free;
+// 			head->next_free = head.next_free.next_free; 
+// 		}else{
+// 			PageDescriptor *temp;
+// 			*temp = pg->next_free;
+// 			pg->next_free = temp->next_free;
+// 		}
+// 	}
+// };
 /**
  * A buddy page allocation algorithm.
  */
@@ -28,15 +57,26 @@ private:
 	 * @param order The order in which the page descriptor lives.
 	 * @return Returns the buddy of the given page descriptor, in the given order.
 	 */
+	 private:
+	PageDescriptor *_free_areas[MAX_ORDER+1];
 	PageDescriptor *buddy_of(PageDescriptor *pgd, int order)
 	{
         // TODO: Implement me!
-        int n = pow(2,order+1);
-        if(pgd % n == 0){
-            return *(pgd + pow(2,order));
-        }else{
-            return *(pgd - pow(2,order));
-        }
+		PageDescriptor *pg = _free_areas[order];
+		int i = 0;
+		//fid its index
+		PageDescriptor prev = *pg; 
+		while(pg){
+			if (*pg->next_free == *pgd){
+				if(i%2 ==0){
+					return pg;
+				}else{
+					return pgd->next_free;
+				}
+				break;
+			}
+			i++;
+		}
 	}
 
 	/**
@@ -51,12 +91,36 @@ private:
 	{
         // TODO: Implement me!
         //add below
-        int add = 0.5* pow(2,order)
-        PageDescriptor *secondf = *block_pointer + add;
-        _free_areas[source_order-1]add_pg(*block_pointer);
-        _free_areas[source_order-1]add_pg(*secondf);
-       //remove above
-        _free_areas[source_order]delete_pg(*block_pointer);   
+		
+		//PageDescriptor b = *block_pointer[0];
+		int add = 0;         
+		for(int i=0;i<source_order;i++)
+		{
+			add *=2;
+		}
+		PageDescriptor half = *block_pointer[add];
+		// PageDescriptor *pg = _free_areas[source_order-1];
+		//implement add and remov
+		PageDescriptor pg = *_free_areas[source_order-1];
+		if (pg==NULL){
+			pg = **block_pointer;
+			pg->next_free = half;
+		}else{
+			while(pg){
+				if(pg->next_free=NULL){
+					pg->next_free = **block_pointer;
+					pg->next_free->next_free = half;
+				}
+				pg = pg->next_free;
+		}
+		//remove 
+		*pg = _free_areas[source_order];
+		while(pg){
+			if(pg == *block_pointer){
+				pg = pg->next_free;
+			}
+			pg = pg->next_free;
+		}  
 	}
 
 	/**
@@ -65,16 +129,38 @@ private:
 	 * @param source_order The order in which the pair of blocks live.
 	 * @return Returns the new slot that points to the merged block.
 	 */
-	PageDescriptor **merge_block(PageDescriptor **block_pointer, int source_order)
-	{
+	PageDescriptor **merge_block(PageDescriptor **block_pointer, int source_order){
         // TODO: Implement me!
          //add above
-        int add = 0.5* pow(2,order)
-        PageDescriptor buddy = buddy_of(*block_pointer, source_order);
-        _free_areas[source_order+1].add_pg(min(*block_pointer,*buddy));
-       //remove below
-        _free_areas[source_order].delete_pg(*block_pointer);  
-        _free_areas[source_order].delete_pg(*buddy);   
+
+        PageDescriptor *buddy = buddy_of(*block_pointer, source_order);
+		//compare the smaller one 
+		PageDescriptor nblock;
+		if(*buddy<**block_pointer){
+			nblock = *buddy;
+		}else{
+			nblock = block_pointer;
+		}
+		PageDescriptor *pg = _free_areas[source_order+1];
+		if (pg==NULL){
+			pg = nblock;
+			pg->next_free = NULL;
+		}else{
+			while(pg){
+				if(pg->next_free=NULL){
+					pg->next_free = nblock;
+					pg->next_free->next_free = NULL;
+				}
+				pg = pg->next_free;
+		}
+		//remove 
+		*pg = *_free_areas[source_order];
+		while(pg){
+			if(*pg == **block_pointer){
+				pg = pg->next_free;
+			}
+			pg = pg->next_free;
+		}   
 	}
 
 public:
@@ -91,9 +177,9 @@ public:
         //starting from that order going up
 
         //available in that order
-        bool found = false
+        bool found = false;
         if(_free_areas[order].size() > 0){
-            l_list block = _free_areas[order];
+            Llist block = _free_areas[order];
             PageDescriptor *pg = block.head;
             while(pg!= NULL){
                  if(pg.type == PageDescriptorType::AVAILABLE){
@@ -108,14 +194,14 @@ public:
         }
         if (found == false){
             for(int i = order+1;i < ARRAY_SIZE(_free_areas); i++){
-                if(_free_areas[i].size() > 0){
-                    l_list block = _free_areas[i];
+                if(_free_areas[i]->size() > 0){
+                    Llist block = _free_areas[i];
                     PageDescriptor *pg = block.head;
                     int b_order = i;
                     while(pg!= NULL){
                     if(pg.type == PageDescriptorType::AVAILABLE){
 
-                        while(_free_areas[order].size() == 0){
+                        while(_free_areas[order]->size() == 0){
                         split_block(**pg,b_order); //split
                         b_order -=1;
                         }
@@ -124,7 +210,7 @@ public:
                         found = true;
                         break;
                     }else{
-                    pg = pg->next_free
+                    pg = pg->next_free;
                     }
                     }  
                 }
@@ -134,7 +220,7 @@ public:
             }
         }else{
             catch{
-                cout << "Memory is Full!";}     
+                mm_log.messagef(LogLevel::DEBUG, "Memory Full:");}     
         }
 	}
 
@@ -147,7 +233,7 @@ public:
     {
         // TODO: Implement me!
         //traverse the linked list and look for pgd and then change to available 
-        PageDescriptor = _free_area[order].head
+        PageDescriptor head = _free_area[order].head
         while (head =! NULL){
             if(pgd = head){
                 pgd.type == PageDescriptorType::AVAILABLE;
@@ -173,14 +259,14 @@ public:
     virtual void insert_page_range(PageDescriptor *start, uint64_t count) override
     {
         // TODO: Implement me!
-        int req_order = ceil(log(count) / log(2));
-        int cur_order = MAX_ORDER
+        int req_order = ilog2_ceil(count);
+        int cur_order = MAX_ORDER;
         while (cur_order > req_order){
             split_block(**start, cur_order)
             cur_order --;
         }
         if (cur_order==req_order){ //mark available
-            start.type == PageDescriptorType::AVAILABLE;
+            start->type == PageDescriptorType::AVAILABLE;
         }
     }
 
@@ -192,8 +278,8 @@ public:
     virtual void remove_page_range(PageDescriptor *start, uint64_t count) override
     {
         // TODO: Implement me!
-        int req_order = ceil(log(count) / log(2));
-        int cur_order = MAX_ORDER
+        int req_order = ilog2_ceil(count);
+        int cur_order = MAX_ORDER;
         while (cur_order > req_order){
             split_block(**start, cur_order)
             cur_order --;
@@ -209,47 +295,11 @@ public:
 	 */
 	bool init(PageDescriptor *page_descriptors, uint64_t nr_page_descriptors) override
 	{
-        // TODO: Implement me!
-        // create the linked list
-        for(int i = 0; i < ARRAY_SIZE(_free_areas); i++){
-            l_list block;
+        // TODO: Implement me!   
+		for(int i = 0; i < ARRAY_SIZE(_free_areas); i++){
+            Llist block;
             _free_area[i] = block;
         }
-        //implement my linked-list
-        class l_list {
-        public:
-            l_list(){
-                head = NULL;
-                tail = NULL; 
-            }
-
-            void add_pg(PageDescriptor *pg){
-                pg->next_free = NULL;
-                if(head == NULL)
-                {
-                    head = *pg;
-                    tail = *pg;
-                }
-                else
-                {
-                    tail->next_free = pg;
-                    tail = tail->next_free;
-                }
-            }
-            void delete_pg(PageDescriptor *pg){   
-                if (head == pg) //if pg is the head node
-                {
-                    head = head.next_free;
-                    head.next_free = head.next_free.next_free;
-                    delete head;
-                }else{
-                    PageDescriptor temp;
-                    temp = pg->next_free;
-                    pg->next_free = temp->next_free;
-                    delete temp;
-                }
-            }
-        };
 	}
 
 	/**
@@ -282,9 +332,10 @@ public:
 		}
 	}
 
-
-private:
-	PageDescriptor *_free_areas[MAX_ORDER+1];
+}
+// private:
+// 	PageDescriptor *_free_areas[MAX_ORDER+1];
+// 	//Llist *_free_areas[MAX_ORDER+1];
 };
 
 /* --- DO NOT CHANGE ANYTHING BELOW THIS LINE --- */
